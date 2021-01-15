@@ -60,13 +60,14 @@ def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100):
         test_ds = DatasetCIFARFS(test_data, test_label)
         val_ds = DatasetCIFARFS(val_data, val_label)
         
-        train_dl = DataLoader(train, batch_size=TRAIN_BATCHSIZE, collate_fn=TextDataset.collate)
+        train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+        test_dl = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+        val_dl = DataLoader(val_ds, batch_size=batch_size, shuffle=True)
+        
+        return train_dl, test_dl, val_dl
         
     else:
         print("Train, Test et Val doivent etre egales a 100")
         return None
     
-    return None
 
-
-get_CIFARFS()
