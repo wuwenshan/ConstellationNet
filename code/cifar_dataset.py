@@ -132,8 +132,6 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
         print("Type de dataset inconnu : ", dataset)
         return None
     
-get_CIFARFS(dataset="fc100")
-            
             
 
 
