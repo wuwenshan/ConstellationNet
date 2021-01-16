@@ -50,7 +50,22 @@ class ConstellationNet(torch.nn.Module):
         
     
     
-    
+    def concatenation(self,X_constell,X_feature_map):
+        
+        #concaténation entre la Convolutional Feature Map et la sortie du Constellation Network
+        concat = torch.cat((X_constell,X_feature_map),1)
+        
+        #conv 1x1
+        conv_one_one = self.conv3(concat)
+        
+        #BatchNorm
+        concat_batch_norm = torch.nn.BatchNorm2d(conv_one_one.shape[1])(conv_one_one)
+        
+        #Relu
+        relu_concat = self.relu(concat_batch_norm)
+        
+        return relu_concat
+        
     
         
         
