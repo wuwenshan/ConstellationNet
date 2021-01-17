@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import torch
+from scipy.spatial import distance_matrix
 
 class ConstellationNet(torch.nn.Module):
     
@@ -66,28 +67,54 @@ class ConstellationNet(torch.nn.Module):
         
         return relu_concat
         
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
         
     
     def constell(self):
         pass
+    
+    
+    
+    
+    """
+        Cette étape de clustering se compose d'un soft k-means produisant une "distance map"
+        Indication du papier :
+            - beta > 0
+            - lambda = 1.0
+    """
+    
+    
+    def cellFeatureClustering(cellFeature, k, epoch, beta=100, lbda=1.0):
+    
+        batch_size = cellFeature.shape[0]
+        h_size = cellFeature.shape[1]
+        
+        # initialisation
+        s = torch.zeros(k)
+        v = torch.randn(k, cellFeature.shape[3])
+        cellFeature = cellFeature.view(-1, cellFeature.shape[3])
+        
+        for _ in range(epoch):
+        
+            # cluster assignment
+            d = torch.tensor(distance_matrix(cellFeature, v))
+            
+            m = torch.zeros(d.shape)
+            for i in range(len(m)):
+                m[i] = torch.exp(-beta * d[i]) / torch.sum( torch.exp(-beta * d[i]) )
+                
+            v_p = torch.zeros(v.shape)
+            for i in range(len(v_p)):
+                v_p[i] = torch.sum(m[:,i]) * torch.sum(cellFeature[i]) / torch.sum(m[:,i])
+            
+            # centroid movement
+            delta_s = torch.sum(m, 0)
+            mu = lbda / (s + delta_s)
+            v = (1 - mu.unsqueeze(1)) * v + mu.unsqueeze(1) * v_p
+            
+            # counter update
+            s += delta_s
+        
+        d_map = d.view(batch_size, h_size, h_size, d.shape[1])
+    
+        return d_map
