@@ -21,6 +21,27 @@ class ConstellationNet(torch.nn.Module):
         self.max_pool = torch.nn.MaxPool2d(2)
         
         
+        #param du resnet
+        #residual bloc 1
+        self.res1conv1 = torch.nn.Conv2d(3,64,3)
+        self.res1conv23 = torch.nn.Conv2d(64,64,3)
+        self.batch_norm_res1 = torch.nn.BatchNorm2d(64)
+        
+        #residual block 2
+        self.res2conv1 = torch.nn.Conv2d(64,128,3)
+        self.res2conv23 = torch.nn.Conv2d(128,128,3)
+        self.batch_norm_res2 = torch.nn.BatchNorm2d(128)
+        
+        #residual block 3
+        self.res3conv1 = torch.nn.Conv2d(128,256,3)
+        self.res3conv23 = torch.nn.Conv2d(128,256,3)
+        self.batch_norm_res3 = torch.nn.BatchNorm2d(256)
+        
+        #residual block 4
+        self.res4conv1 = torch.nn.Conv2d(256,512,3)
+        self.res4conv23 = torch.nn.Conv2d(512,512,3)
+        self.batch_norm_res4 = torch.nn.BatchNorm2d(512)
+        
         
         
     def forward(self, x):
@@ -67,7 +88,16 @@ class ConstellationNet(torch.nn.Module):
         
         return relu_concat
         
-
+    
+    
+  def resblock(self):
+      
+    
+   
+    
+    
+    
+    
         
     
     def constell(self):
