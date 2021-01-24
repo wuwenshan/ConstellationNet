@@ -55,18 +55,25 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             val_label = []
             
             for data, label in dataset:
+                data = data.view(-1).unsqueeze(0) # (3, 32, 32) -> (1, 3x32x32)
                 if label in train_cl:
                     train_data.append(data)
-                    train_label.append(label)
+                    train_label.append(torch.tensor([label]))
                 elif label in test_cl:
                     test_data.append(data)
-                    test_label.append(label)
+                    test_label.append(torch.tensor([label]))
                 elif label in val_cl:
                     val_data.append(data)
-                    val_label.append(label)
+                    val_label.append(torch.tensor([label]))
                 else:
                     print("wtf : ", label)
+                    
+                    
+            return torch.cat(train_data), torch.cat(train_label), torch.cat(test_data), torch.cat(test_label), torch.cat(val_data), torch.cat(val_label)
+        
             
+            
+            """
             
             train_ds = DatasetCIFAR(train_data, train_label)
             test_ds = DatasetCIFAR(test_data, test_label)
@@ -77,6 +84,8 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             val_dl = DataLoader(val_ds, batch_size=batch_size, shuffle=True)
             
             return train_dl, test_dl, val_dl
+        
+            """
             
     elif dataset == "fc100":
         
@@ -110,9 +119,15 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             test_data = dataset[test_cl]
             val_data = dataset[val_cl]
             
-            train_labels = coarse_labels[train_cl]
-            test_labels = coarse_labels[test_cl]
-            val_labels = coarse_labels[val_cl]
+            train_label = coarse_labels[train_cl]
+            test_label = coarse_labels[test_cl]
+            val_label = coarse_labels[val_cl]
+            
+            
+            return train_data, train_label, test_data, test_label, val_data, val_label
+        
+            
+            """
             
             print(train_data.shape, test_data.shape, val_data.shape)
             print(train_labels.shape, test_labels.shape, val_labels.shape)
@@ -126,6 +141,8 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             val_dl = DataLoader(val_ds, batch_size=batch_size, shuffle=True)
             
             return train_dl, test_dl, val_dl
+        
+            """
         
         
     else:
