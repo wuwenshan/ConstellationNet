@@ -8,10 +8,15 @@ class ConstellationNet(torch.nn.Module):
         super(ConstellationNet, self).__init__()
         
         self.nb_cluster = k
+        self.n_channels_start = n_channels_start
+        self.n_channels_convo = n_channels_convo
+        self.n_channels_concat = n_channels_concat
+        self.n_channels_one_one = n_channels_one_one
+        
         
         #param de conv4
         # channels en entrée (RGB), 16 filtres, filtre 3* 3
-        self.conv_trois_trois = torch.nn.Conv2d(n_channels_start,n_channels_convo,3)
+        self.conv_trois_trois = torch.nn.Conv2d(n_channels_start,n_channels_convo,3,padding = 1)
         
         #conv 1x1 finale
         self.conv_un_un = torch.nn.Conv2d(n_channels_concat,n_channels_one_one,1)
@@ -21,32 +26,49 @@ class ConstellationNet(torch.nn.Module):
         
         
         #param du resnet
+        
+        #conv 1 x 1
+        self.conv_un_un_res1 = torch.nn.Conv2d(k + 64,n_channels_one_one,1)
+        self.conv_un_un_res2 = torch.nn.Conv2d(k + 128,n_channels_one_one,1)
+        self.conv_un_un_res3 = torch.nn.Conv2d(k + 256,n_channels_one_one,1)
+        self.conv_un_un_res4 = torch.nn.Conv2d(k + 512,n_channels_one_one,1)
+        
         #residual bloc 1
-        self.res1conv1 = torch.nn.Conv2d(n_channels_start,64,3)
-        self.res1conv23 = torch.nn.Conv2d(64,64,3)
+        self.res1conv1 = torch.nn.Conv2d(n_channels_start,64,3,padding = 1)
+        #self.res1conv23 = torch.nn.Conv2d(64,64,3)
         self.batch_norm_res1 = torch.nn.BatchNorm2d(64)
         
         #residual block 2
         self.res2conv1 = torch.nn.Conv2d(64,128,3)
-        self.res2conv23 = torch.nn.Conv2d(128,128,3)
+        #self.res2conv23 = torch.nn.Conv2d(128,128,3)
         self.batch_norm_res2 = torch.nn.BatchNorm2d(128)
         
         #residual block 3
         self.res3conv1 = torch.nn.Conv2d(128,256,3)
-        self.res3conv23 = torch.nn.Conv2d(128,256,3)
+        #self.res3conv23 = torch.nn.Conv2d(128,256,3)
         self.batch_norm_res3 = torch.nn.BatchNorm2d(256)
         
         #residual block 4
         self.res4conv1 = torch.nn.Conv2d(256,512,3)
-        self.res4conv23 = torch.nn.Conv2d(512,512,3)
+        #self.res4conv23 = torch.nn.Conv2d(512,512,3)
         self.batch_norm_res4 = torch.nn.BatchNorm2d(512)
         
+        #on commence avec 64 (2^6) channels et on double pour les blocks suivants
         
+        
+        
+        
+        
+    
+        
+            
         
     def forward(self, x):
         pass
     
     def conv(self,X):
+        """ bloc simple de convolution pour Conv-4 """
+        
         #convolution 3 * 3
         convo = self.conv_trois_trois(X)
         #print("Après la convo shape de X : ",convo.shape)
@@ -70,14 +92,38 @@ class ConstellationNet(torch.nn.Module):
         return convo_feature_map
         
     
-    
-    def concatenation(self,X_constell,X_feature_map):
+    def conv4_constell(self,X):
+        """ Conv-4 backbone avec module Constell """  
+        for i in range(4):
+            
+            #convolution
+            features_map = self.conv(X)
+            
+            #constellation
+            X_constell = torch.randn(X.shape[0],self.nb_cluster,features_map.shape[2],features_map.shape[3])
+            
+            #concatenation
+            X_concat = self.concatenation(X_constell,features_map,self.conv_un_un)
+            
+            X = X_concat
+        print("X_concat size : ",X_concat.shape)
+            
+        return X
+
+    def concatenation(self,X_constell,X_feature_map,conv1):
+        """ partie concaténation entre Features Map et la sortie du Constellation Module """
         
-        #concaténation entre la Convolutional Feature Map et la sortie du Constellation Network
+        print("Dans concat")
+        print("X constell shape : ",X_constell.shape)
+        print("X feature map shape :",X_feature_map.shape)
+        
+        
         concat = torch.cat((X_constell,X_feature_map),1)
+        print("concat des deux : ",concat.shape)
+        print()
         
         #conv 1x1
-        conv_one_one = self.conv_un_un(concat)
+        conv_one_one = conv1(concat)
         
         #BatchNorm
         concat_batch_norm = torch.nn.BatchNorm2d(conv_one_one.shape[1])(conv_one_one)
@@ -89,39 +135,104 @@ class ConstellationNet(torch.nn.Module):
         
     
     
-    def resblock(self,X,X_constell,convo1,convo23,batch_norm):
+    def resblock(self,X,convo1,batch_norm,conv1):
+        """ residual block de ResNet-12 """
+        
+        print("dim de X : ",X.shape)
         
         #première convo du bloc
-        X_convo = convo1(X)
+        X_convo = convo1(X.float())
         X_b_norm = torch.nn.BatchNorm2d(X_convo.shape[1])(X_convo)
         X_feature_map = self.relu(X_b_norm)
         
         #identité
-        ident = X_convo
+        ident = X
+        print("dim de ident : ",ident.shape)
         
         #Constellation network 
-        X_constell = self.constellation(X_feature_map)
+        X_constell = torch.randn(X.shape[0],self.nb_cluster,X.shape[2],X.shape[3])
+        print("X_constell shape : ",X_constell.shape)
         
         #concat Feature map et Constellation
-        X_concat = self.concatenation(X_constell,X_feature_map)
+        
+        X_concat = self.concatenation(X_constell,X_feature_map,conv1)
+        print("X_concat shape : ",X_concat.shape)
+                                      
         
         #2e et 3e convo du bloc
         for i in range(2):
-            X_convo_i = convo23(X_concat)
+            print(i+2,"e convo du bloc")
+            X_convo_i = convo1(X_concat)
             X_convo_i_norm = torch.nn.BatchNorm2d(X_convo_i.shape[1])(X_convo_i)
             X_convo_i_feature_map = self.relu(X_convo_i_norm)
+            print("shape x convo i : ",X_convo_i_feature_map.shape)
+            
             
             #constellation et concaténation
-            X_i_constell = self.constellation(X_convo_i_feature_map)
-            X_concat = self.concatenation(X_i_constell,X_convo_ifeature_map)
-            
+            #X_i_constell = self.constellation(X_convo_i_feature_map)
+            X_i_constell = torch.randn(X_convo_i.shape[0],self.nb_cluster,X_convo_i.shape[2],X_convo_i.shape[3])
+            X_concat = self.concatenation(X_i_constell,X_convo_i_feature_map,conv1)
+            print("resbloc, shape de x concat : ",X_concat.shape)
+        
+        
+        #ajouter identité
+        X_out = X + X_concat 
         
         #max pool
-        X_end_block = self.max_pool(X_concat)
+        X_end_block = self.max_pool(X_out)
+        print("X_end block shape : ",X_end_block.shape)
         
-        #ajouter idendité
-        #ajouter paddind et peut être stride pour garder les mêmes dims
-      
+        
+        
+        return X_end_block
+        
+    
+    
+    
+    def init_convo_layers(self):
+        
+        #convo 3 x 3  avec n_channels = 64,128,256,512
+        convo_trois_trois_layers = []
+        convo_one_one_layers = []
+        batch_norm_layers = []
+        
+        i = 1
+        n_channels_res_convo = 64
+        
+        convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1))
+        convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1))
+        batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo))
+        
+        while i < 4:
+            
+            n_channels_res_convo *= 2
+            convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1))
+            convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1))
+            batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo))
+            
+            i += 1
+            
+        print("len de convo trois trois : ",len(convo_trois_trois_layers))
+        print("len de convo trois trois : ",len(convo_one_one_layers))
+        
+        self.convo_trois_trois_layers = convo_trois_trois_layers
+        self.convo_one_one_layers = convo_one_one_layers
+        
+        return convo_trois_trois_layers,convo_one_one_layers
+    
+    
+    
+    
+    
+    
+    def resnet12_constell(self,X):
+        """
+        self.init_convo_layers()
+        
+        i = 0
+        #premier bloc résiduel 
+        X_res_1 = self.resblock()
+        """
     
    
     
@@ -130,8 +241,9 @@ class ConstellationNet(torch.nn.Module):
     
         
     
-    def constell(self):
-        pass
+    def constell(self,X_constell):
+        return X_constell
+        
     
     
     
