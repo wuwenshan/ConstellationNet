@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 from scipy.spatial import distance_matrix
+import math
 
 class ConstellationNet(torch.nn.Module):
     
@@ -258,18 +259,17 @@ class ConstellationNet(torch.nn.Module):
     
     def cellFeatureClustering(cellFeature, k, epoch, beta=100, lbda=1.0):
     
-        batch_size = cellFeature.shape[0]
-        h_size = cellFeature.shape[1]
+        batch_size, nb_chan, h_size, w_size = cellFeature.shape
         
         # initialisation
         s = torch.zeros(k)
-        v = torch.randn(k, cellFeature.shape[3])
-        cellFeature = cellFeature.view(-1, cellFeature.shape[3])
+        v = torch.randn(k, nb_chan)
+        cellFeature = cellFeature.permute(1, 0, 2, 3).contiguous().view(nb_chan, -1)
         
         for _ in range(epoch):
         
             # cluster assignment
-            d = torch.tensor(distance_matrix(cellFeature, v))
+            d = torch.tensor(distance_matrix(cellFeature.T, v))
             
             m = torch.zeros(d.shape)
             for i in range(len(m)):
@@ -288,5 +288,42 @@ class ConstellationNet(torch.nn.Module):
             s += delta_s
         
         d_map = d.view(batch_size, h_size, h_size, d.shape[1])
-    
+        
         return d_map
+
+
+    def positionalEncoding(b, h, w, c):
+        orig_c = c
+        c = int(torch.ceil(torch.tensor(c/2)))
+        div_term = torch.exp(torch.arange(0., c, 2) * (-(math.log(10000.0) / c)))
+        pos_h = torch.arange(0, h)
+        pos_w = torch.arange(0, w)
+        sin_inp_h = torch.einsum("i,j->ij", pos_h, div_term)
+        sin_inp_w = torch.einsum("i,j->ij", pos_w, div_term)
+        emb_h = torch.cat((sin_inp_h.sin(), sin_inp_h.cos()), dim=-1).unsqueeze(1)
+        emb_w = torch.cat((sin_inp_w.sin(), sin_inp_w.cos()), dim=-1)
+        emb = torch.zeros((b,h,w,c*2))
+        emb[:,:,:,:c] = emb_h
+        emb[:,:,:,c:2*c] = emb_w
+
+        return emb[:,:,:,:orig_c]
+
+
+    def oneHeadAtt(d_map, p_enc):
+        b = d_map.shape[0]
+        k = d_map.shape[3]
+        f1 = (d_map + p_enc).view(b, -1, k)
+        f1_p = d_map.view(b, -1, k)
+        
+        wq = torch.nn.Linear(k, k)
+        wk = torch.nn.Linear(k, k)
+        wv = torch.nn.Linear(k, k)
+        
+        fq = wq(f1)
+        fk = wk(f1)
+        fv = wv(f1_p)
+        sm = torch.nn.Softmax(dim=2)
+        
+        fa = torch.max( sm((torch.bmm(fq, fk.permute(0, 2, 1)) / math.sqrt(k) )), 2)[0].unsqueeze(2) * fv
+        
+        return fa
