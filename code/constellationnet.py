@@ -2,6 +2,7 @@
 import torch
 from scipy.spatial import distance_matrix
 import math
+from sklearn.metrics.pairwise import cosine_similarity
 
 class ConstellationNet(torch.nn.Module):
     
@@ -64,9 +65,13 @@ class ConstellationNet(torch.nn.Module):
             # convolutionnal feature map
             cfm = self.conv(x)
             
+            # cell relation modeling
+            constell_module = self.constell(cfm)
+            
+            x = self.concatenation(cfm, constell_module, self.conv_un_un)
             
     
-
+        return x # self.similarity(x)
   
     
     
@@ -118,7 +123,7 @@ class ConstellationNet(torch.nn.Module):
             
         return X
 
-    def concatenation(self,X_constell,X_feature_map,conv1):
+    def concatenation(self, X_feature_map, X_constell, conv1):
         """ partie concaténation entre Features Map et la sortie du Constellation Module """
         
         print("Dans concat")
@@ -259,7 +264,7 @@ class ConstellationNet(torch.nn.Module):
         # output feature fa avec un self attention mechanism
         fa = self.multiHeadAtt(d_map, pos_enc, self.nb_head)
     
-        return self.concatenation(self, fa, cfm, self.conv_un_un)
+        return fa
     
     
     """
@@ -270,7 +275,7 @@ class ConstellationNet(torch.nn.Module):
     """
     
     
-    def cellFeatureClustering(cellFeature, k, epoch, beta=100, lbda=1.0):
+    def cellFeatureClustering(self, cellFeature, k, epoch, beta=100, lbda=1.0):
     
         batch_size, nb_chan, h_size, w_size = cellFeature.shape
         
@@ -322,7 +327,7 @@ class ConstellationNet(torch.nn.Module):
         return emb[:,:,:,:orig_c]
 
 
-    def oneHeadAtt(d_map, p_enc):
+    def oneHeadAtt(self, d_map, p_enc):
         b = d_map.shape[0]
         k = d_map.shape[3]
         f1 = (d_map + p_enc).view(b, -1, k)
@@ -341,7 +346,7 @@ class ConstellationNet(torch.nn.Module):
         
         return fa
     
-    def multiHeadAtt(d_map, pos_enc, head):
+    def multiHeadAtt(self, d_map, p_enc, head):
         k = d_map.shape[3]
         w = torch.nn.Linear(k*head, k)
         
@@ -349,5 +354,16 @@ class ConstellationNet(torch.nn.Module):
         for _ in range(head):
             all_head.append(self.oneHeadAtt(d_map, p_enc))
             
-        return torch.cat(all_head, 3)
+        return w(torch.cat(all_head, 3))
     
+    """
+    def similarity(self, featuresMap):
+        fm = torch.nn.AvgPool2d(featureMap, kernel_size=2, stride=2)
+        emb = fm.view(len(fm), -1)
+        query = emb[-1]
+        support = emb[:-1]
+        cos_sim = cosine_similarity(support, query)
+        pred = torch.argmax(torch.tensor(cos_sim))
+        
+        return pred
+    """
