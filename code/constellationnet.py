@@ -5,10 +5,11 @@ import math
 
 class ConstellationNet(torch.nn.Module):
     
-    def __init__(self,k,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one):
+    def __init__(self, k, nb_head, n_channels_start, n_channels_convo, n_channels_concat, n_channels_one_one):
         super(ConstellationNet, self).__init__()
         
         self.nb_cluster = k
+        self.nb_head = nb_head
         self.n_channels_start = n_channels_start
         self.n_channels_convo = n_channels_convo
         self.n_channels_concat = n_channels_concat
@@ -56,16 +57,22 @@ class ConstellationNet(torch.nn.Module):
         
         #on commence avec 64 (2^6) channels et on double pour les blocks suivants
         
-        
-        
-        
-        
     
         
-            
-        
     def forward(self, x):
-        pass
+        for _ in range(4):
+            # convolutionnal feature map
+            cfm = self.conv(x)
+            
+            
+    
+
+  
+    
+    
+    
+    
+    
     
     def conv(self,X):
         """ bloc simple de convolution pour Conv-4 """
@@ -242,11 +249,17 @@ class ConstellationNet(torch.nn.Module):
     
         
     
-    def constell(self,X_constell):
-        return X_constell
+    def constell(self, cfm):
+        # distance map par soft k-means
+        d_map = self.cellFeatureClustering(cfm, k=self.nb_cluster, epoch=10)
         
+        # positional encoding
+        pos_enc = self.positionalEncoding(b=3, h=32, w=32, c=self.nb_cluster)
+        
+        # output feature fa avec un self attention mechanism
+        fa = self.multiHeadAtt(d_map, pos_enc, self.nb_head)
     
-    
+        return self.concatenation(self, fa, cfm, self.conv_un_un)
     
     
     """
@@ -327,3 +340,14 @@ class ConstellationNet(torch.nn.Module):
         fa = torch.max( sm((torch.bmm(fq, fk.permute(0, 2, 1)) / math.sqrt(k) )), 2)[0].unsqueeze(2) * fv
         
         return fa
+    
+    def multiHeadAtt(d_map, pos_enc, head):
+        k = d_map.shape[3]
+        w = torch.nn.Linear(k*head, k)
+        
+        all_head = []
+        for _ in range(head):
+            all_head.append(self.oneHeadAtt(d_map, p_enc))
+            
+        return torch.cat(all_head, 3)
+    
