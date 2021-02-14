@@ -25,7 +25,7 @@ def unpickle(file):
     return dict
     
 
-def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset="cifarfs"):
+def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100, dataset="cifarfs"):
     
     
     if dataset == "cifarfs":
@@ -55,7 +55,8 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             val_label = []
             
             for data, label in dataset:
-                data = data.view(-1).unsqueeze(0) # (3, 32, 32) -> (1, 3x32x32)
+                data = data.permute(1, 2, 0)
+                #data = data.view(-1).unsqueeze(0) # (3, 32, 32) -> (1, 3x32x32)
                 if label in train_cl:
                     train_data.append(data)
                     train_label.append(torch.tensor([label]))
@@ -69,7 +70,7 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
                     print("wtf : ", label)
                     
                     
-            return torch.cat(train_data), torch.cat(train_label), torch.cat(test_data), torch.cat(test_label), torch.cat(val_data), torch.cat(val_label)
+            return torch.stack(train_data), torch.cat(train_label), torch.stack(test_data), torch.cat(test_label), torch.stack(val_data), torch.cat(val_label)
         
             
             
@@ -115,9 +116,9 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
             test_cl = cl[train_size: train_size+test_size]
             val_cl = cl[train_size+test_size:]
             
-            train_data = dataset[train_cl]
-            test_data = dataset[test_cl]
-            val_data = dataset[val_cl]
+            train_data = dataset[train_cl].view(-1, 32, 32, 3)
+            test_data = dataset[test_cl].view(-1, 32, 32, 3)
+            val_data = dataset[val_cl].view(-1, 32, 32, 3)
             
             train_label = coarse_labels[train_cl]
             test_label = coarse_labels[test_cl]
@@ -153,6 +154,6 @@ def get_CIFARFS(train_size=12, test_size=4, val_size=4, batch_size=100, dataset=
 
 
 
-
+train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
 
 
