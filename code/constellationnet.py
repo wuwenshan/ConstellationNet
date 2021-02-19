@@ -29,7 +29,7 @@ class ConstellationNet(torch.nn.Module):
         
         
         #param du resnet
-        
+        """
         #conv 1 x 1
         self.conv_un_un_res1 = torch.nn.Conv2d(k + 64,n_channels_one_one,1)
         self.conv_un_un_res2 = torch.nn.Conv2d(k + 128,n_channels_one_one,1)
@@ -55,7 +55,7 @@ class ConstellationNet(torch.nn.Module):
         self.res4conv1 = torch.nn.Conv2d(n_channels_one_one,512,3)
         #self.res4conv23 = torch.nn.Conv2d(512,512,3)
         self.batch_norm_res4 = torch.nn.BatchNorm2d(512)
-        
+        """
         #on commence avec 64 (2^6) channels et on double pour les blocks suivants
         
     

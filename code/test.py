@@ -8,7 +8,8 @@ Created on Sat Jan 16 20:21:39 2021
 import torch
 
 from constellationnet import ConstellationNet
-
+from conv4_constell import Conv4Constell
+from resnet12_constell import ResNet12Constell
 
 #channels number
 nb_cluster = 5 #nombre de chanels pour le Feature Cell Encoding
@@ -82,4 +83,16 @@ conv_un_un_res1 = torch.nn.Conv2d(nb_cluster + 64,n_channels_one_one,1)
 #c.init_convo_layers()
 
 #test de resnet12_constell
-c.resnet12_constell(X_tens)
+#c.resnet12_constell(X_tens)
+
+###############################
+
+#test de Conv4Constell
+"""
+conv4 = Conv4Constell(n_channels_data,n_channels_convo,c)
+conv4(X_tens)
+"""
+
+#test de Resnet12Constell
+resnet12 = ResNet12Constell(n_channels_data,c)
+resnet12(X_tens)
