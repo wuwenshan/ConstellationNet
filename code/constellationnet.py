@@ -114,6 +114,7 @@ class ConstellationNet(torch.nn.Module):
             
             #constellation
             X_constell = torch.randn(X.shape[0],self.nb_cluster,features_map.shape[2],features_map.shape[3])
+            #X_constell = self.constell(features_map)
             
             #concatenation
             X_concat = self.concatenation(X_constell,features_map,self.conv_un_un)

@@ -12,35 +12,49 @@ from constellationnet import ConstellationNet
 
 #channels number
 nb_cluster = 5 #nombre de chanels pour le Feature Cell Encoding
+nb_head = 8
 n_channels_data = 3 
 n_channels_convo = 16 #nombre de channels pour la première convolution 3 x 3
 n_channels_concat = nb_cluster + n_channels_convo #nombre de channels total lors de la concaténation
 n_channels_one_one = 3 #nombre de filtre lors de la conv 1x1
 
 #données
-X_tens = torch.randint(150,(200,n_channels_data,24,24))
+X_tens = torch.randn((200,n_channels_data,24,24))
 print("X_tens shape : ",X_tens.shape)
 
 
 conv4_un_un = torch.nn.Conv2d(n_channels_concat,n_channels_one_one,1)
 
-c = ConstellationNet(nb_cluster,n_channels_data,n_channels_convo,n_channels_concat,n_channels_one_one)
+c = ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_channels_concat,n_channels_one_one)
+
+
 
 #test de la partie conv
-"""
+
 res = c.conv(X_tens.float()) 
 X_constell = torch.rand(200,nb_cluster,res.shape[2],res.shape[3]) 
+
+"""
 #print("res shape : ",res.shape)
+"""
 
-
+"""
 #test de la partie concat
 ensemble = c.concatenation(X_constell,res,conv4_un_un)
 print("dim de ensemble : ",ensemble.shape)
 """
 
 
+#test de constell
+c.constell(res) #erreur
+
 #conv4
 #c.conv4_constell(X_tens.float())
+
+
+
+#forward
+#c(X_tens)
 
 
 
@@ -49,7 +63,7 @@ print("dim de ensemble : ",ensemble.shape)
 
 
 #test de resblock
-print("test de resblock")
+#print("test de resblock")
 
 #convolution
 
