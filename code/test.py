@@ -46,7 +46,7 @@ print("dim de ensemble : ",ensemble.shape)
 
 
 #test de constell
-c.constell(res) #erreur
+#c.constell(res) #erreur
 
 #conv4
 #c.conv4_constell(X_tens.float())
@@ -71,14 +71,15 @@ c.constell(res) #erreur
 res1conv1 = torch.nn.Conv2d(n_channels_data,64,3,padding = 1)
 batch_norm_res1 = torch.nn.BatchNorm2d(64)
 conv_un_un_res1 = torch.nn.Conv2d(nb_cluster + 64,n_channels_one_one,1)
-
-
-
-c.resblock(X_tens,res1conv1,batch_norm_res1,conv_un_un_res1)
 """
+
+
+#c.resblock(X_tens,res1conv1,batch_norm_res1,conv_un_un_res1)
+
 
 
 #test de init_convo_layers
 #c.init_convo_layers()
 
 #test de resnet12_constell
+c.resnet12_constell(X_tens)
