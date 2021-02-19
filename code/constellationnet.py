@@ -26,6 +26,13 @@ class ConstellationNet(torch.nn.Module):
         
         self.relu = torch.nn.ReLU()
         self.max_pool = torch.nn.MaxPool2d(2)
+
+	self.conv4 = torch.nn.Sequential(
+          torch.nn.Conv2d(n_channels_start, n_channels_convo, 3, padding = 1),
+          torch.nn.BatchNorm2d(64),
+          torch.nn.ReLU(),
+          torch.nn.MaxPool2d(2)
+        )
         
         
         #param du resnet
@@ -65,7 +72,7 @@ class ConstellationNet(torch.nn.Module):
             print(f"X initial (step {i}): ", x.shape)
 
             # convolutionnal feature map
-            cfm = self.conv(x)
+            cfm = self.conv4(x)
 
             print("After conv : ", cfm.shape)
             
@@ -283,9 +290,11 @@ class ConstellationNet(torch.nn.Module):
         d_map = self.cellFeatureClustering(cfm, k=self.nb_cluster, epoch=10)
 
         print("distance map : ", d_map.shape)
-        
+	b = d_map.shape[0]
+	h = d_map.shape[2]        
+
         # positional encoding
-        pos_enc = self.positionalEncoding(b=1, h=16, w=16, c=self.nb_cluster)
+        pos_enc = self.positionalEncoding(b, h, h, c=self.nb_cluster)
 
         print("Positional encoding : ", pos_enc.shape)
         
