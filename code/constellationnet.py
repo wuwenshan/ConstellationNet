@@ -61,15 +61,24 @@ class ConstellationNet(torch.nn.Module):
     
         
     def forward(self, x):
-        for _ in range(4):
+        for i in range(4):
+            print(f"X initial (step {i}): ", x.shape)
+
             # convolutionnal feature map
             cfm = self.conv(x)
+
+            print("After conv : ", cfm.shape)
             
             # cell relation modeling
             constell_module = self.constell(cfm)
+
+            print("After constell : ", constell_module.shape)
             
             x = self.concatenation(cfm, constell_module, self.conv_un_un)
             
+            print("Post concat : ", x.shape)
+
+            x = x.float()
     
         return x # self.similarity(x)
   
@@ -272,12 +281,22 @@ class ConstellationNet(torch.nn.Module):
     def constell(self, cfm):
         # distance map par soft k-means
         d_map = self.cellFeatureClustering(cfm, k=self.nb_cluster, epoch=10)
+
+        print("distance map : ", d_map.shape)
         
         # positional encoding
-        pos_enc = self.positionalEncoding(b=3, h=32, w=32, c=self.nb_cluster)
+        pos_enc = self.positionalEncoding(b=1, h=16, w=16, c=self.nb_cluster)
+
+        print("Positional encoding : ", pos_enc.shape)
         
         # output feature fa avec un self attention mechanism
         fa = self.multiHeadAtt(d_map, pos_enc, self.nb_head)
+
+        print("Multi Head Att : ", fa.shape)
+        h = int(math.sqrt(fa.shape[1]))
+        fa = fa.view(fa.shape[0], h, h, fa.shape[2]).permute(0, 3, 1, 2)
+
+        print("Multi Head Att : ", fa.shape)
     
         return fa
     
@@ -298,12 +317,13 @@ class ConstellationNet(torch.nn.Module):
         s = torch.zeros(k)
         v = torch.randn(k, nb_chan)
         cellFeature = cellFeature.permute(1, 0, 2, 3).contiguous().view(nb_chan, -1)
+
         
         for _ in range(epoch):
-        
+
             # cluster assignment
-            d = torch.tensor(distance_matrix(cellFeature.T, v))
-            
+            d = torch.tensor(distance_matrix(cellFeature.T.detach().numpy(), v.detach().numpy()))
+
             m = torch.zeros(d.shape)
             for i in range(len(m)):
                 m[i] = torch.exp(-beta * d[i]) / torch.sum( torch.exp(-beta * d[i]) )
@@ -321,11 +341,11 @@ class ConstellationNet(torch.nn.Module):
             s += delta_s
         
         d_map = d.view(batch_size, h_size, h_size, d.shape[1])
+        d_map = d_map.permute(0, 3, 1, 2)
         
         return d_map
 
-
-    def positionalEncoding(b, h, w, c):
+    def positionalEncoding(self, b, h, w, c):
         orig_c = c
         c = int(torch.ceil(torch.tensor(c/2)))
         div_term = torch.exp(torch.arange(0., c, 2) * (-(math.log(10000.0) / c)))
@@ -339,37 +359,44 @@ class ConstellationNet(torch.nn.Module):
         emb[:,:,:,:c] = emb_h
         emb[:,:,:,c:2*c] = emb_w
 
-        return emb[:,:,:,:orig_c]
+        return emb[:,:,:,:orig_c].permute(0, 3, 1, 2)
 
 
     def oneHeadAtt(self, d_map, p_enc):
         b = d_map.shape[0]
-        k = d_map.shape[3]
-        f1 = (d_map + p_enc).view(b, -1, k)
-        f1_p = d_map.view(b, -1, k)
+        k = d_map.shape[1]
+        f1 = (d_map + p_enc).view(b, k, -1).permute(0, 2, 1)
+        f1_p = d_map.view(b, k, -1).permute(0, 2, 1)
         
         wq = torch.nn.Linear(k, k)
+        wq = wq.double()
+
         wk = torch.nn.Linear(k, k)
+        wk = wk.double()
+
         wv = torch.nn.Linear(k, k)
-        
+        wv = wv.double()
+
         fq = wq(f1)
         fk = wk(f1)
         fv = wv(f1_p)
+
         sm = torch.nn.Softmax(dim=2)
-        
+
         fa = torch.max( sm((torch.bmm(fq, fk.permute(0, 2, 1)) / math.sqrt(k) )), 2)[0].unsqueeze(2) * fv
         
         return fa
     
     def multiHeadAtt(self, d_map, p_enc, head):
-        k = d_map.shape[3]
+        k = d_map.shape[1]
         w = torch.nn.Linear(k*head, k)
+        w = w.double()
         
         all_head = []
         for _ in range(head):
             all_head.append(self.oneHeadAtt(d_map, p_enc))
             
-        return w(torch.cat(all_head, 3))
+        return w(torch.cat(all_head, 2))
     
     """
     def similarity(self, featuresMap):
