@@ -22,18 +22,25 @@ class ConstellationNet(torch.nn.Module):
         self.conv_trois_trois = torch.nn.Conv2d(n_channels_start,n_channels_convo,3,padding = 1)
         
         #conv 1x1 finale
-        self.conv_un_un = torch.nn.Conv2d(n_channels_concat,n_channels_one_one,1)
+        self.conv_un_un = torch.nn.Conv2d(n_channels_concat,n_channels_one_one,1).double()
         
         self.relu = torch.nn.ReLU()
         self.max_pool = torch.nn.MaxPool2d(2)
-
-	self.conv4 = torch.nn.Sequential(
-          torch.nn.Conv2d(n_channels_start, n_channels_convo, 3, padding = 1),
-          torch.nn.BatchNorm2d(64),
-          torch.nn.ReLU(),
-          torch.nn.MaxPool2d(2)
-        )
         
+        self.conv4 = torch.nn.Sequential(
+                    torch.nn.Conv2d(n_channels_start,n_channels_convo,3,padding = 1),
+                    torch.nn.BatchNorm2d(64),
+                    torch.nn.ReLU(),
+                    torch.nn.MaxPool2d(2)
+                    )
+        """
+    	self.conv4 = torch.nn.Sequential(
+                torch.nn.Conv2d(n_channels_start, n_channels_convo, 3, padding = 1),
+                torch.nn.BatchNorm2d(64),
+                torch.nn.ReLU(),
+                torch.nn.MaxPool2d(2)
+                )
+        """
         
         #param du resnet
         """
@@ -140,7 +147,7 @@ class ConstellationNet(torch.nn.Module):
             
         return X
 
-    def concatenation(self, X_feature_map, X_constell, conv1):
+    def concatenation(self,X_constell,X_feature_map,conv1):
         """ partie concaténation entre Features Map et la sortie du Constellation Module """
         
         """
@@ -157,11 +164,11 @@ class ConstellationNet(torch.nn.Module):
         """
         
         #conv 1x1
-        conv_one_one = conv1(concat)
+        conv_one_one = conv1(concat.double())
         
         #BatchNorm
-        concat_batch_norm = torch.nn.BatchNorm2d(conv_one_one.shape[1])(conv_one_one)
-        
+        concat_batch_norm = torch.nn.BatchNorm2d(conv_one_one.shape[1]).double()(conv_one_one)
+        #concat_batch_norm = concat_batch_norm
         #Relu
         relu_concat = self.relu(concat_batch_norm)
         
@@ -175,16 +182,14 @@ class ConstellationNet(torch.nn.Module):
         #print("dim de X : ",X.shape)
         
         #première convo du bloc
-        X_convo = convo1(X.float())
-        X_b_norm = torch.nn.BatchNorm2d(X_convo.shape[1])(X_convo)
+        X_convo = convo1(X)
+        X_b_norm = batch_norm(X_convo)
         X_feature_map = self.relu(X_b_norm)
         
-        #identité
-        ident = X
-        #print("dim de ident : ",ident.shape)
         
         #Constellation network 
-        X_constell = torch.randn(X.shape[0],self.nb_cluster,X.shape[2],X.shape[3])
+        #X_constell = torch.randn(X.shape[0],self.nb_cluster,X.shape[2],X.shape[3])
+        X_constell = self.constell(X_feature_map)
         #print("X_constell shape : ",X_constell.shape)
         
         #concat Feature map et Constellation
@@ -197,14 +202,14 @@ class ConstellationNet(torch.nn.Module):
         for i in range(2):
             #print(i+2,"e convo du bloc")
             X_convo_i = convo1(X_concat)
-            X_convo_i_norm = torch.nn.BatchNorm2d(X_convo_i.shape[1])(X_convo_i)
+            X_convo_i_norm = batch_norm(X_convo_i)
             X_convo_i_feature_map = self.relu(X_convo_i_norm)
             #print("shape x convo i : ",X_convo_i_feature_map.shape)
             
             
             #constellation et concaténation
-            #X_i_constell = self.constellation(X_convo_i_feature_map)
-            X_i_constell = torch.randn(X_convo_i.shape[0],self.nb_cluster,X_convo_i.shape[2],X_convo_i.shape[3])
+            X_i_constell = self.constell(X_convo_i_feature_map)
+            #X_i_constell = torch.randn(X_convo_i.shape[0],self.nb_cluster,X_convo_i.shape[2],X_convo_i.shape[3])
             X_concat = self.concatenation(X_i_constell,X_convo_i_feature_map,conv1)
             #print("resbloc, shape de x concat : ",X_concat.shape)
         
@@ -225,17 +230,17 @@ class ConstellationNet(torch.nn.Module):
         i = 1
         n_channels_res_convo = 64
         
-        convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1))
-        convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1))
-        batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo))
+        convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1).double())
+        convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1).double())
+        batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo).double())
         
         while i < 4:
             
             #nombre de filtres doublés d'un bloc à l'autre
             n_channels_res_convo *= 2
-            convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1))
-            convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1))
-            batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo))
+            convo_trois_trois_layers.append(torch.nn.Conv2d(self.n_channels_start,n_channels_res_convo,3,padding = 1).double())
+            convo_one_one_layers.append(torch.nn.Conv2d(self.nb_cluster + n_channels_res_convo,self.n_channels_one_one,1).double())
+            batch_norm_layers.append(torch.nn.BatchNorm2d(n_channels_res_convo).double())
             
             i += 1
             
@@ -290,11 +295,11 @@ class ConstellationNet(torch.nn.Module):
         d_map = self.cellFeatureClustering(cfm, k=self.nb_cluster, epoch=10)
 
         print("distance map : ", d_map.shape)
-	b = d_map.shape[0]
-	h = d_map.shape[2]        
-
+        d_map.shape[0]
+        d_map.shape[2]        
+        h = d_map.shape[2]
         # positional encoding
-        pos_enc = self.positionalEncoding(b, h, h, c=self.nb_cluster)
+        pos_enc = self.positionalEncoding(1, h, h, c=self.nb_cluster)
 
         print("Positional encoding : ", pos_enc.shape)
         

@@ -10,17 +10,18 @@ import torch
 from constellationnet import ConstellationNet
 from conv4_constell import Conv4Constell
 from resnet12_constell import ResNet12Constell
+import constell_net
 
 #channels number
-nb_cluster = 5 #nombre de chanels pour le Feature Cell Encoding
+nb_cluster = 32 #nombre de chanels pour le Feature Cell Encoding
 nb_head = 8
 n_channels_data = 3 
-n_channels_convo = 16 #nombre de channels pour la première convolution 3 x 3
+n_channels_convo = 64 #nombre de channels pour la première convolution 3 x 3
 n_channels_concat = nb_cluster + n_channels_convo #nombre de channels total lors de la concaténation
 n_channels_one_one = 3 #nombre de filtre lors de la conv 1x1
 
 #données
-X_tens = torch.randn((200,n_channels_data,24,24))
+X_tens = torch.randn((1,n_channels_data,32,32))
 print("X_tens shape : ",X_tens.shape)
 
 
@@ -31,9 +32,9 @@ c = ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_chann
 
 
 #test de la partie conv
-
 res = c.conv(X_tens.float()) 
 X_constell = torch.rand(200,nb_cluster,res.shape[2],res.shape[3]) 
+
 
 """
 #print("res shape : ",res.shape)
@@ -51,7 +52,6 @@ print("dim de ensemble : ",ensemble.shape)
 
 #conv4
 #c.conv4_constell(X_tens.float())
-
 
 
 #forward
@@ -83,7 +83,7 @@ conv_un_un_res1 = torch.nn.Conv2d(nb_cluster + 64,n_channels_one_one,1)
 #c.init_convo_layers()
 
 #test de resnet12_constell
-#c.resnet12_constell(X_tens)
+#c.resnet12_constell(X_tens.double())
 
 ###############################
 
@@ -94,5 +94,21 @@ conv4(X_tens)
 """
 
 #test de Resnet12Constell
-resnet12 = ResNet12Constell(n_channels_data,c)
-resnet12(X_tens)
+
+#resnet12 = ResNet12Constell(n_channels_data,c)
+#resnet12(X_tens)
+
+#######################
+
+#test de ConstellationNetConstell dans le fichier conv4_constell_proto
+model = constell_net.ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_channels_concat,n_channels_one_one)
+
+""" Partie conv4 """
+#model(X_tens)
+
+""" Partie resnet12 """
+#model.resnet12_constell(X_tens)
+
+""" Assemblage des deux modèles """
+archi = 1
+model(X_tens,archi)
