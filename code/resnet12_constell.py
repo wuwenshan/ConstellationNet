@@ -111,7 +111,7 @@ class ResNet12Constell(torch.nn.Module):
         for i in range(4):
             
             #bloc résiduel 
-            X_res = self.resblock(X_ident,self.convo_trois_trois_layers[i],self.batch_norm_layers[i],self.convo_one_one_layers[i])
+            X_res = self.resblock(X_ident.double(),self.convo_trois_trois_layers[i],self.batch_norm_layers[i],self.convo_one_one_layers[i])
             
             #ajouter identité
             X_out = X_ident + X_res

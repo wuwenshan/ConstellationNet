@@ -21,7 +21,10 @@ n_channels_concat = nb_cluster + n_channels_convo #nombre de channels total lors
 n_channels_one_one = 3 #nombre de filtre lors de la conv 1x1
 
 #données
-X_tens = torch.randn((1,n_channels_data,32,32))
+
+
+X_tens = torch.randn((1,n_channels_data,32,32)).float()
+
 print("X_tens shape : ",X_tens.shape)
 
 
@@ -53,9 +56,18 @@ print("dim de ensemble : ",ensemble.shape)
 #conv4
 #c.conv4_constell(X_tens.float())
 
+#conv4 sequential
+#c.conv4(X_tens)
+
 
 #forward
 #c(X_tens)
+
+"""
+output = c(X_tens)
+print("shape output : ",output.shape)
+"""
+
 
 
 
@@ -85,16 +97,20 @@ conv_un_un_res1 = torch.nn.Conv2d(nb_cluster + 64,n_channels_one_one,1)
 #test de resnet12_constell
 #c.resnet12_constell(X_tens.double())
 
+
+
+
+
 ###############################
 
 #test de Conv4Constell
+
 """
 conv4 = Conv4Constell(n_channels_data,n_channels_convo,c)
 conv4(X_tens)
 """
 
 #test de Resnet12Constell
-
 #resnet12 = ResNet12Constell(n_channels_data,c)
 #resnet12(X_tens)
 
@@ -112,3 +128,5 @@ model = constell_net.ConstellationNet(nb_cluster,nb_head,n_channels_data,n_chann
 """ Assemblage des deux modèles """
 archi = 1
 model(X_tens,archi)
+
+
