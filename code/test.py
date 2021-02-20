@@ -12,6 +12,8 @@ from conv4_constell import Conv4Constell
 from resnet12_constell import ResNet12Constell
 import constell_net
 
+from mini_imagenet_dataset import MiniImageNetData,getMiniDatasets,getMiniLoaders
+
 #channels number
 nb_cluster = 32 #nombre de chanels pour le Feature Cell Encoding
 nb_head = 8
@@ -25,7 +27,7 @@ n_channels_one_one = 3 #nombre de filtre lors de la conv 1x1
 
 X_tens = torch.randn((1,n_channels_data,32,32)).float()
 
-print("X_tens shape : ",X_tens.shape)
+#print("X_tens shape : ",X_tens.shape)
 
 
 conv4_un_un = torch.nn.Conv2d(n_channels_concat,n_channels_one_one,1)
@@ -36,7 +38,7 @@ c = ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_chann
 
 #test de la partie conv
 res = c.conv(X_tens.float()) 
-X_constell = torch.rand(200,nb_cluster,res.shape[2],res.shape[3]) 
+#X_constell = torch.rand(200,nb_cluster,res.shape[2],res.shape[3]) 
 
 
 """
@@ -117,7 +119,7 @@ conv4(X_tens)
 #######################
 
 #test de ConstellationNetConstell dans le fichier conv4_constell_proto
-model = constell_net.ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_channels_concat,n_channels_one_one)
+#model = constell_net.ConstellationNet(nb_cluster,nb_head,n_channels_data,n_channels_convo,n_channels_concat,n_channels_one_one)
 
 """ Partie conv4 """
 #model(X_tens)
@@ -126,7 +128,39 @@ model = constell_net.ConstellationNet(nb_cluster,nb_head,n_channels_data,n_chann
 #model.resnet12_constell(X_tens)
 
 """ Assemblage des deux modèles """
-archi = 1
-model(X_tens,archi)
+
+#archi = 0
+#model(X_tens,archi)
+
+###################################
+#MiniImageNetDataset
+datasets_path = "..\\datasets\\"
+train_file = datasets_path+"mini-imagenet-cache-train.pkl"
+val_file = datasets_path+"mini-imagenet-cache-val.pkl"
+test_file = datasets_path+"mini-imagenet-cache-test.pkl"
+
+imgnet_builder = MiniImageNetData(train_file,val_file,test_file)
+
+
+#test de create
+"""
+debut_classe = 80
+X_train,Y_train,data = imgnet_builder.create(test_file,debut_classe)
+print("Len de Y_train : ",Y_train.shape)
+ind_classe = 6227
+class_dict = data['class_dict']
+print("Classe de Y indice",ind_classe," : ",Y_train[ind_classe])
+if ind_classe in list(class_dict.values())[Y_train[ind_classe] - debut_classe]:
+    print("Bonne classe")
+    print("Classe associée : ",Y_train[ind_classe])
+else :
+    print("Mauvaise classe")
+    print("Y_train[30000] = ",Y_train[ind_classe])
+    print("class dict associé : ",list(class_dict.values())[Y_train[ind_classe]])
+    print("Y_train : ",Y_train)
+"""
+
+#test de getData
+donnes,labels = imgnet_builder.getData()
 
 
