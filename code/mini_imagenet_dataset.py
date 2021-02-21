@@ -197,7 +197,12 @@ class MiniImageNetData():
     def create(self,path,start_class):
         data_imagenet = self.unpickle(path)
         X_imagenet = torch.from_numpy(data_imagenet['image_data'])
-        print("X : ",X_imagenet.shape)
+        print("X_imagenet avant view : ",X_imagenet.shape)
+        X = X_imagenet.view(X_imagenet.shape[0],X_imagenet.shape[3],
+                            X_imagenet.shape[1],X_imagenet.shape[2])
+        
+        print("X après view : ",X.shape)
+        
         
         
         
@@ -212,7 +217,7 @@ class MiniImageNetData():
         print()
         
         
-        return X_imagenet,Y_imagenet,data_imagenet
+        return X,Y_imagenet,data_imagenet
         
     def getData(self):
         donnees = []

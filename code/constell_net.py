@@ -183,7 +183,7 @@ class ConstellationNet(torch.nn.Module):
     ####################### Partie forward ########################################    
     def forward(self,X,archi):
         output = self.conv4_constell(X) if archi == 0 else self.resnet12_constell(X)
-  
+        return output
         
     
     ###################### Partie Constellation et Concatenation ##################
