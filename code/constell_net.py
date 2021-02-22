@@ -221,24 +221,25 @@ class ConstellationNet(torch.nn.Module):
     
     def constell(self, cfm):
         # distance map par soft k-means
-        d_map = self.cellFeatureClustering(cfm, k=self.nb_cluster, epoch=10)
+        d_map = self.cellFeatureClustering(cfm)
 
-        print("distance map : ", d_map.shape)
+        #print("distance map : ", d_map.shape)
         h = d_map.shape[2]
+        b = d_map.shape[0]
 
         # positional encoding
-        pos_enc = self.positionalEncoding(1, h, h, c=self.nb_cluster)
+        pos_enc = self.positionalEncoding(b, h, h, c=self.nb_cluster)
 
-        print("Positional encoding : ", pos_enc.shape)
+        #print("Positional encoding : ", pos_enc.shape)
         
         # output feature fa avec un self attention mechanism
-        fa = self.multiHeadAtt(d_map, pos_enc, self.nb_head)
+        fa = self.multiHeadAtt(d_map, pos_enc)
 
-        print("Multi Head Att : ", fa.shape)
+        #print("Multi Head Att : ", fa.shape)
         h = int(math.sqrt(fa.shape[1]))
         fa = fa.view(fa.shape[0], h, h, fa.shape[2]).permute(0, 3, 1, 2)
 
-        print("Multi Head Att : ", fa.shape)
+        #print("Multi Head Att : ", fa.shape)
     
         return fa
     
@@ -251,39 +252,65 @@ class ConstellationNet(torch.nn.Module):
     """
     
     
-    def cellFeatureClustering(self, cellFeature, k, epoch, beta=100, lbda=1.0):
-    
+    def cellFeatureClustering(self, cellFeature):
         batch_size, nb_chan, h_size, w_size = cellFeature.shape
         
         # initialisation
-        s = torch.zeros(k)
-        v = torch.randn(k, nb_chan)
-        cellFeature = cellFeature.permute(1, 0, 2, 3).contiguous().view(nb_chan, -1)
+        s = torch.zeros(self.nb_cluster)
+        v = torch.randn(self.nb_cluster, nb_chan)
+        cellFeature = cellFeature.permute(1, 0, 2, 3).contiguous().view(nb_chan, -1).T
+        #v_ind = torch.randperm(len(cellFeature))[:k]
+        #v = cellFeature[v_ind]
 
-        
-        for _ in range(epoch):
+        #print("v : ", v)
+
+        #print("cellFeature : ", cellFeature)
+
+        for _ in range(self.nb_epoch):
 
             # cluster assignment
-            d = torch.tensor(distance_matrix(cellFeature.T.detach().numpy(), v.detach().numpy()))
+            #d = torch.pow( torch.tensor(distance_matrix(cellFeature.detach().numpy(), v.detach().numpy())), 2 )
 
-            m = torch.zeros(d.shape)
+            cdist = torch.cdist(cellFeature, v, 2, 'use_mm_for_euclid_dist')
+            #print("cdist : ", cdist.shape)
+            #print("cdist : ", cdist)
+            #print("d : ", d)
+            #print("m_i : ", torch.exp(-beta * d[0]), torch.sum( torch.exp(-beta * d[0]) ))
+
+            m = torch.zeros(cdist.shape)
             for i in range(len(m)):
-                m[i] = torch.exp(-beta * d[i]) / torch.sum( torch.exp(-beta * d[i]) )
+                m[i] = torch.exp(-self.beta * cdist[i]) / torch.sum( torch.exp(-self.beta * cdist[i]) )
+
+            #print("m : ", m)
+            m = torch.tensor( np.nan_to_num(m.detach().numpy(), nan=0.001, posinf=1, neginf=1) )
+            
                 
             v_p = torch.zeros(v.shape)
             for i in range(len(v_p)):
-                v_p[i] = torch.sum(m[:,i]) * torch.sum(cellFeature[i]) / torch.sum(m[:,i])
+              #print(torch.sum(m[:,i]))
+              v_p[i] = torch.sum(m[:,i]) * torch.sum(cellFeature[i]) / torch.sum(m[:,i])
+
+            v_p = torch.tensor( np.nan_to_num(v_p.detach().numpy(), nan=0.001, posinf=1, neginf=1) )
+            #print("v_p : ", v_p)
             
             # centroid movement
             delta_s = torch.sum(m, 0)
-            mu = lbda / (s + delta_s)
+            #print("delta s ", delta_s)
+            mu = self.lbda / (s + delta_s)
+            mu = torch.tensor( np.nan_to_num(mu.detach().numpy(), nan=0.001, posinf=1, neginf=1) )
+            #print("mu : ", mu)
             v = (1 - mu.unsqueeze(1)) * v + mu.unsqueeze(1) * v_p
-            
+            v = torch.tensor( np.nan_to_num(v.detach().numpy(), nan=0.001, posinf=1, neginf=1) )
+            #print("v : ", v)
             # counter update
             s += delta_s
+            s = torch.tensor( np.nan_to_num(s.detach().numpy(), nan=0.001, posinf=1, neginf=1) )
+            #print("s : ", s)
         
-        d_map = d.view(batch_size, h_size, h_size, d.shape[1])
+        d_map = cdist.view(batch_size, h_size, h_size, cdist.shape[1])
         d_map = d_map.permute(0, 3, 1, 2)
+
+        #print("d map : ", d_map)
         
         return d_map
 
@@ -306,24 +333,13 @@ class ConstellationNet(torch.nn.Module):
 
 
     def oneHeadAtt(self, d_map, p_enc):
-        print("LL : ", d_map.shape, p_enc.shape)
         b = d_map.shape[0]
         k = d_map.shape[1]
         f1 = (d_map + p_enc).view(b, k, -1).permute(0, 2, 1)
         f1_p = d_map.view(b, k, -1).permute(0, 2, 1)
-        
-        wq = torch.nn.Linear(k, k)
-        wq = wq.double()
-
-        wk = torch.nn.Linear(k, k)
-        wk = wk.double()
-
-        wv = torch.nn.Linear(k, k)
-        wv = wv.double()
-
-        fq = wq(f1)
-        fk = wk(f1)
-        fv = wv(f1_p)
+        fq = self.wq(f1)
+        fk = self.wk(f1)
+        fv = self.wv(f1_p)
 
         sm = torch.nn.Softmax(dim=2)
 
@@ -331,14 +347,13 @@ class ConstellationNet(torch.nn.Module):
         
         return fa
     
-    def multiHeadAtt(self, d_map, p_enc, head):
+
+    def multiHeadAtt(self, d_map, p_enc):
         k = d_map.shape[1]
-        w = torch.nn.Linear(k*head, k)
-        w = w.double()
         
         all_head = []
-        for _ in range(head):
+        for _ in range(self.nb_head):
             all_head.append(self.oneHeadAtt(d_map, p_enc))
             
-        return w(torch.cat(all_head, 2))
+        return self.w(torch.cat(all_head, 2))
     
