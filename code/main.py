@@ -7,7 +7,10 @@ from mini_imagenet_dataset import MiniImageNetData
 from constell_net import ConstellationNet
 from utils import sample_query_support,training_prototypical, apprentissage
 
-
+from tqdm import tqdm
+from utils import *
+from constellationnet_conv4 import ConstellationNet_conv4
+from constellationnet_resnet12 import ConstellationNet_resnet12
 
 
 
@@ -55,3 +58,10 @@ if __name__ == "__main__":
     
     #boucle apprentissage
     apprentissage(model,X_train,Y_train,Nc,Ns,Nq,nb_episodes,flag)
+
+
+    """
+    train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
+    all_acc = training(train_data[500:800], train_label[500:800], test_data[500:800], test_label[500:800], 10)
+
+    """
