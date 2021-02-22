@@ -185,6 +185,81 @@ def training_prototypical(data,labels,Nc,Ns,Nq,model,flag):
     acc = sim_acc(tens_sim,tens_classes,V)
     
     return (loss + total_sim)/(Nc * Nq),acc
+
+
+def training(train_data, train_labels, test_data, test_labels, nb_series):
+
+  
+  # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  # train_data = train_data.to(device)
+  # train_labels = train_labels.to(device)
+  # test_data = test_data.to(device)
+  # test_labels = test_labels.to(device)
+
+
+  model = ConstellationNet(nb_clusters=8, nb_heads=1, nb_epochs=1, beta=1, lbda=1, n_channels_start=3, n_channels_convo=64, output_size=100)
+  #model = model.float()
+  #model = model.to(device)
+  criterion = torch.nn.CrossEntropyLoss()
+  optim = torch.optim.SGD(model.parameters(), lr=1, momentum=0.9, weight_decay=0.0005)
+
+  loss_train = []
+  acc_train = []
+
+  loss_test = []
+  acc_test = []
+
+ 
+  optim.zero_grad()
+
+  """
+    Partie training avec toute la partie Train
+  """
+  features = model(train_data)
+  l = criterion(features, train_labels)
+  l.backward()
+  loss_train.append(l.item())
+
+  optim.step()
+
+  """
+    Partie test avec ProtoNet-Based Framework
+  """
+  print("Debut partie test avec évaluation en séries")
+
+  all_acc = []
+
+  for i in tqdm(range(nb_series)):
+    
+    supp_data, supp_labels, query_data, query_labels = getSupportQuery(test_data, test_labels)
+    print(supp_data.shape, supp_labels.shape, query_data.shape, query_labels.shape)
+    acc_mean = 0
+
+    for _ in range(10):
+
+      """
+        Training support-set
+      """
+      optim.zero_grad()
+      features = model(supp_data)
+      #print("f s :", features.shape)
+      l = criterion(features, supp_labels)
+      l.backward()
+      optim.step()
+
+      """
+        Testing query-set
+      """
+      x_query = model(query_data)
+      #print("xquery : ", x_query)
+      pred = getSimilarity(features, supp_labels, x_query)
+      acc = pred.eq(query_labels).float().mean()
+      print("Acc : ", acc)
+      all_acc.append(acc)
+    
+
+
+  return all_acc
         
         
 
