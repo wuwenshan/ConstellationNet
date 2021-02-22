@@ -5,28 +5,7 @@ import torch
 
 from mini_imagenet_dataset import MiniImageNetData
 from constell_net import ConstellationNet
-from utils import sample_query_support,training_prototypical
-
-
-def apprentissage(model,data,labels,Nc,Ns,Nq,nb_episodes,flag):
-    
-    liste_losses = []
-    liste_acc = []
-    
-    for i in range(nb_episodes):
-        print("#################### EPISODE ",i,"###########################")
-        loss,acc = training_prototypical(data,labels,Nc,Ns,Nq,model,flag)
-        liste_losses.append(loss)
-        liste_acc.append(acc)
-        
-        
-    print("Loss : ",loss)
-    print("Acc : ",acc)
-    print("len de loss : ",len(liste_losses))
-    print("len de liste_acc : ",len(liste_acc))
-    
-
-
+from utils import sample_query_support,training_prototypical, apprentissage
 
 
 
