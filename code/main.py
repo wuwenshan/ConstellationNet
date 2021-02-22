@@ -35,6 +35,11 @@ if __name__ == "__main__":
     X_test = donnees[2]
     Y_test = labels[2]
     
+    #600 données par classe
+    #prendre les 5 premières classes pour éviter de saturer la mémoire
+    X = torch.true_divide(X_train[:3000],255)
+    Y = torch.true_divide(Y_train[:3000],255)
+    
     
     #paramètres du modèle
     k = 32
@@ -43,25 +48,32 @@ if __name__ == "__main__":
     n_channels_convo = 3
     n_channels_concat = n_channels_convo + k
     n_channels_one_one = 3
+    nb_epoch = 2
+    beta = 0.01
+    lbda = 1.0
+    print("n_channels start : ",n_channels_start)
+    
     
     #model
-    model = ConstellationNet(k,nb_head,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one)
+    model = ConstellationNet(k,nb_head,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one,nb_epoch,beta,lbda)
     
     #paramètres few-shot
-    Nc = 4 #nombre de classes par épisode
-    Ns = 5 #nombre d'exemples dans le support par classe
-    Nq = 3 #nombre d'exemples query par classe
+    Nc = 3 #nombre de classes par épisode
+    Ns = 2 #nombre d'exemples dans le support par classe
+    Nq = 1 #nombre d'exemples query par classe
     nb_episodes = 2
     flag = 0 #0 pour conv4, 1 pour resnet12
     K = len(torch.unique(Y_train))
+    
     print("K : ",K)
     
     #boucle apprentissage
-    apprentissage(model,X_train,Y_train,Nc,Ns,Nq,nb_episodes,flag)
+    apprentissage(model,X,Y,Nc,Ns,Nq,nb_episodes,flag)
 
-
+    
     """
     train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
     all_acc = training(train_data[500:800], train_label[500:800], test_data[500:800], test_label[500:800], 10)
 
     """
+    

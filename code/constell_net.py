@@ -3,10 +3,11 @@ import torch
 from scipy.spatial import distance_matrix
 import math
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 class ConstellationNet(torch.nn.Module):
     
-    def __init__(self, k, nb_head, n_channels_start, n_channels_convo, n_channels_concat, n_channels_one_one):
+    def __init__(self, k, nb_head, n_channels_start, n_channels_convo, n_channels_concat, n_channels_one_one,nb_epoch,beta,lbda):
         super(ConstellationNet, self).__init__()
         
         self.nb_cluster = k
@@ -16,6 +17,13 @@ class ConstellationNet(torch.nn.Module):
         self.n_channels_concat = n_channels_concat
         self.n_channels_one_one = n_channels_one_one
         
+        self.nb_epoch = nb_epoch
+        self.beta = beta
+        self.lbda = lbda
+        self.wq = torch.nn.Linear(self.nb_cluster,self.nb_cluster)
+        self.wk = torch.nn.Linear(self.nb_cluster,self.nb_cluster)
+        self.wv = torch.nn.Linear(self.nb_cluster,self.nb_cluster)
+        self.w = torch.nn.Linear(self.nb_cluster*self.nb_head, self.nb_cluster)
         
         #param de conv4
         # channels en entrée (RGB), 16 filtres, filtre 3* 3
@@ -30,7 +38,7 @@ class ConstellationNet(torch.nn.Module):
 
         self.conv4 = torch.nn.Sequential(
           torch.nn.Conv2d(n_channels_start, n_channels_convo, 3, padding = 1),
-          torch.nn.BatchNorm2d(64),
+          torch.nn.BatchNorm2d(3),
           torch.nn.ReLU(),
           torch.nn.MaxPool2d(2)
         )
@@ -143,7 +151,7 @@ class ConstellationNet(torch.nn.Module):
             #max pool (identité pour le prochain bloc)
             X_ident = self.max_pool(X_out)
         
-            print("num_bloc : ",i+1,"X_ident shape: ",X_ident.shape)
+            #print("num_bloc : ",i+1,"X_ident shape: ",X_ident.shape)
         
          
         return X_ident
@@ -157,10 +165,10 @@ class ConstellationNet(torch.nn.Module):
         """ Conv4 backbonne avec module Constell """
         
         for i in range(4):
-            print(f"X initial (step {i}): ", X.shape)
+            #print(f"X initial (step {i}): ", X.shape)
 
             # convolutionnal feature map
-            cfm = self.conv4(X)
+            cfm = self.conv4(X.float())
 
             #print("After conv : ", cfm.shape)
             
@@ -205,7 +213,7 @@ class ConstellationNet(torch.nn.Module):
         
         #conv 1x1
         conv_one_one = conv1(concat.double())
-        print("ok conv1")
+        #print("ok conv1")
         
         #BatchNorm
         concat_batch_norm = torch.nn.BatchNorm2d(conv_one_one.shape[1])

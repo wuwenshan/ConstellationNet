@@ -61,24 +61,27 @@ def sample_query_support(data,labels,Ns,Nq,k):
         k : numéro de la classe 
     """
     
+    """
     print("size de data : ",data.shape)
     print("classe traité : ",k)
     print("labels : ",labels)
+    """
+    
     #indices des exemples de la classe k  
     all_k_ind = torch.where(labels == k)[0]
-    print("all k ind : ",all_k_ind)
+    #print("all k ind : ",all_k_ind)
     
     #choisir des exemples aléatoires pour le support
     supp_indices = np.random.choice(all_k_ind,Ns,replace=False)
     supp_exemples = data[supp_indices]
     supp_labels = labels[supp_indices]
     
-    
+    """
     print("supp_ind : ",len(supp_indices))
     print("supp_exemples : ",supp_exemples.shape)
     print("sup : ",supp_labels)
     print()
-    
+    """
     #enlever indices déjà choisis pour support 
     all_k_ind_q = torch.tensor(list(set(all_k_ind.tolist()) - set(supp_indices.tolist())))
     #print("all_ind_q shape : ",all_k_ind_q.shape)
@@ -88,12 +91,13 @@ def sample_query_support(data,labels,Ns,Nq,k):
     query_exemples = data[query_indices]
     query_labels = labels[query_indices]
     
+    """
     print("query_ind : ",len(query_indices))
     print("query_exemples : ",query_exemples.shape)
     print("query : ",query_labels)
     print()
-    
-    return supp_exemples,supp_indices,query_exemples,query_labels
+    """
+    return supp_exemples,supp_labels,query_exemples,query_labels
    
     
 def training_prototypical(data,labels,Nc,Ns,Nq,model,flag):
@@ -119,26 +123,26 @@ def training_prototypical(data,labels,Nc,Ns,Nq,model,flag):
         
         #modèle sur le support 
         output = model.forward(supp_x,flag)
-        print("output shape : ",output.shape)
+        #print("output shape : ",output.shape)
         #print("output : ",output)
         vectors = torch.flatten(output,1,3)
-        print("vectors shape : ",vectors.shape)
+        #print("vectors shape : ",vectors.shape)
     
         ck = torch.sum(vectors,0) / Nc
-        print("ck shape : ",ck.shape)
+        #print("ck shape : ",ck.shape)
         
         prototypes.append(ck)
         queries.append(query_x)
         classes.append(query_y)
         
     tens_ck = torch.stack(prototypes)
-    print("tens ck shape : ",tens_ck.shape)
+    #print("tens ck shape : ",tens_ck.shape)
     
     tens_queries = torch.cat(queries)
-    print("tens_queries shape : ",tens_queries.shape)
+    #print("tens_queries shape : ",tens_queries.shape)
     
     tens_classes = torch.cat(classes,dim = 0)
-    print("tens_classes shape : ",tens_classes.shape)
+    #print("tens_classes shape : ",tens_classes.shape)
 
 
     
@@ -153,26 +157,27 @@ def training_prototypical(data,labels,Nc,Ns,Nq,model,flag):
         output_query = model.forward(tens_queries,flag)
         query_vectors = torch.flatten(output_query,1,3)
         
-        print("\nquery_vectors shape : ",query_vectors.shape)
+        #print("\nquery_vectors shape : ",query_vectors.shape)
         
         ck_extend = torch.stack([tens_ck[i]] * (Nc * Nq))
-        print("ck_extend shape : ",ck_extend.shape)
+        #print("ck_extend shape : ",ck_extend.shape)
         
         sim = cos(query_vectors,ck_extend)
+        """
         print("ck : ",ck)
         print("dim de sim : ",sim.shape)
-        
+        """
         liste_d.append(sim)
         
     
     #somme des similarités totales
     tens_sim = torch.stack(liste_d,dim = 1)
-    print("\ntens_sim shape : ",tens_sim.shape)
+    #print("\ntens_sim shape : ",tens_sim.shape)
     
     total_sim = torch.log(torch.sum(-torch.exp(tens_sim)))
     
-    print("labels shape : ",tens_classes.shape)
-    print("labels : ",tens_classes)
+    #print("labels shape : ",tens_classes.shape)
+    #print("labels : ",tens_classes)
     
     #similarité entre une query et le prototype associé
     j = 0
@@ -298,11 +303,12 @@ def apprentissage(model,data,labels,Nc,Ns,Nq,nb_episodes,flag):
         liste_acc.append(acc)
         
         
-    print("Loss : ",loss)
-    print("Acc : ",acc)
+        print("Loss : ",loss)
+        print("Acc : ",acc)
     print("len de loss : ",len(liste_losses))
     print("len de liste_acc : ",len(liste_acc))
-        
+    
+    
         
 
 
