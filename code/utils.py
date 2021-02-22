@@ -10,10 +10,9 @@ def unpickle(file):
         dict = pickle.load(fo, encoding='bytes') 
     return dict
 
-
 def getSupportQuery(data, label, K=3, N=5):
-    cl = np.random.choice(label, K, replace=False)
-    
+    cl = np.random.choice(np.unique(label), K, replace=False)
+    print("cl ! ", cl)
     support_data = []
     support_label = []
     query_data = []
