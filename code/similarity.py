@@ -15,12 +15,13 @@ def getSimilarity(features, labels, x_query):
     
     for l in all_labels:
         features_l = features[torch.where(labels == l)]
-        all_c.append(torch.mean(features_l, 0))
-        
-    cos_sim = cosine_similarity(torch.cat(all_c, 0), x_query)
-    cos_sim /= torch.sum(torch.exp(cos_sim))
+        #print("mean : ", torch.mean(features_l, 0))
+        all_c.append(torch.mean(features_l, 0).unsqueeze(0))
+
+    cos_sim = torch.tensor(cosine_similarity(torch.cat(all_c, 0).detach().numpy(), x_query.detach().numpy())).T
+    p = torch.exp(cos_sim) / torch.sum(torch.exp(cos_sim))
     
-    pred = all_labels[torch.argmax(cos_sim)]
+    pred = all_labels[torch.argmax(p, 1)]
     
     return pred
     

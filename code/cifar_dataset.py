@@ -25,7 +25,7 @@ def unpickle(file):
     return dict
     
 
-def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100, dataset="cifarfs"):
+def get_CIFARFS(train_size=64, test_size=20, val_size=16, dataset="cifarfs"):
     
     
     if dataset == "cifarfs":
@@ -70,7 +70,7 @@ def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100, datase
                     print("wtf : ", label)
                     
                     
-            return torch.stack(train_data), torch.cat(train_label), torch.stack(test_data), torch.cat(test_label), torch.stack(val_data), torch.cat(val_label)
+            return torch.stack(train_data).permute(0, 3, 1, 2)/255, torch.cat(train_label), torch.stack(test_data).permute(0, 3, 1, 2)/255, torch.cat(test_label), torch.stack(val_data), torch.cat(val_label)
         
             
             
@@ -125,7 +125,7 @@ def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100, datase
             val_label = coarse_labels[val_cl]
             
             
-            return train_data, train_label, test_data, test_label, val_data, val_label
+            return train_data.permute(0, 3, 1, 2)/255, train_label, test_data.permute(0, 3, 1, 2)/255, test_label, val_data, val_label
         
             
             """
@@ -154,6 +154,6 @@ def get_CIFARFS(train_size=64, test_size=20, val_size=16, batch_size=100, datase
 
 
 
-train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
-
+#train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
+#train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS(14, 4, 2, "fc100")
 
