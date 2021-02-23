@@ -70,7 +70,10 @@ if __name__ == "__main__":
     #boucle apprentissage
     apprentissage(model,X,Y,Nc,Ns,Nq,nb_episodes,flag)
 
-    
+    """
+	Pour le jeu de données CIFAR-FS 
+    """    
+
     """
     train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
     all_acc = training(train_data[500:800], train_label[500:800], test_data[500:800], test_label[500:800], 10)
