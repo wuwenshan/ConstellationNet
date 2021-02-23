@@ -4,6 +4,8 @@ import torch
 #import cifar_dataset as cf
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+#from constellationnet_conv4 import ConstellationNet_conv4
+from constell_net import ConstellationNet
 
 def unpickle(file): 
     import pickle 
@@ -193,7 +195,7 @@ def training_prototypical(data,labels,Nc,Ns,Nq,model,flag):
     return (loss + total_sim)/(Nc * Nq),acc
 
 
-def training(train_data, train_labels, test_data, test_labels, nb_series):
+def training(train_data, train_labels, test_data, test_labels, nb_series,model,flag):
 
   
   # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -203,7 +205,8 @@ def training(train_data, train_labels, test_data, test_labels, nb_series):
   # test_labels = test_labels.to(device)
 
 
-  model = ConstellationNet(nb_clusters=8, nb_heads=1, nb_epochs=1, beta=1, lbda=1, n_channels_start=3, n_channels_convo=64, output_size=100)
+  #model = ConstellationNet_conv4(nb_clusters=8, nb_heads=1, nb_epochs=1, beta=1, lbda=1, n_channels_start=3, n_channels_convo=64, output_size=100)
+  #model = ConstellationNet(k = 8,nb_head = 8,n_channels)
   #model = model.float()
   #model = model.to(device)
   criterion = torch.nn.CrossEntropyLoss()
@@ -221,7 +224,7 @@ def training(train_data, train_labels, test_data, test_labels, nb_series):
   """
     Partie training avec toute la partie Train
   """
-  features = model(train_data)
+  features = model(train_data,flag)
   l = criterion(features, train_labels)
   l.backward()
   loss_train.append(l.item())
@@ -247,7 +250,7 @@ def training(train_data, train_labels, test_data, test_labels, nb_series):
         Training support-set
       """
       optim.zero_grad()
-      features = model(supp_data)
+      features = model(supp_data,flag)
       #print("f s :", features.shape)
       l = criterion(features, supp_labels)
       l.backward()
@@ -295,6 +298,7 @@ def apprentissage(model,data,labels,Nc,Ns,Nq,nb_episodes,flag):
     
     liste_losses = []
     liste_acc = []
+    optim = torch.optim.SGD(model.parameters(), lr=1, momentum=0.9, weight_decay=0.0005)
     
     for i in range(nb_episodes):
         print("#################### EPISODE ",i,"###########################")
@@ -302,6 +306,8 @@ def apprentissage(model,data,labels,Nc,Ns,Nq,nb_episodes,flag):
         liste_losses.append(loss)
         liste_acc.append(acc)
         
+        optim.step()
+        optim.zero_grad()
         
         print("Loss : ",loss)
         print("Acc : ",acc)

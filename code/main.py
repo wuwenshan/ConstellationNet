@@ -3,7 +3,7 @@
 
 import torch
 
-from mini_imagenet_dataset import MiniImageNetData
+#from mini_imagenet_dataset import MiniImageNetData
 from constell_net import ConstellationNet
 from utils import sample_query_support,training_prototypical, apprentissage
 
@@ -11,13 +11,14 @@ from tqdm import tqdm
 from utils import *
 from constellationnet_conv4 import ConstellationNet_conv4
 from constellationnet_resnet12 import ConstellationNet_resnet12
-
+from cifar_dataset import *
 
 
 if __name__ == "__main__":
     
     #charger les données de MiniImageNet
     
+    """
     datasets_path = "..\\datasets\\"
     train_file = datasets_path+"mini-imagenet-cache-train.pkl"
     val_file = datasets_path+"mini-imagenet-cache-val.pkl"
@@ -38,9 +39,14 @@ if __name__ == "__main__":
     #600 données par classe
     #prendre les 5 premières classes pour éviter de saturer la mémoire
     X = torch.true_divide(X_train[:3000],255)
-    Y = torch.true_divide(Y_train[:3000],255)
+    Y = Y_train[:3000]
     
+    #normaliser données
+    X_t_norm = torch.true_divide(X_test[:3000],255)
+    Y_t = Y_train[:3000]
+    """
     
+    """
     #paramètres du modèle
     k = 32
     nb_head = 8
@@ -54,9 +60,7 @@ if __name__ == "__main__":
     print("n_channels start : ",n_channels_start)
     
     
-    #model
     model = ConstellationNet(k,nb_head,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one,nb_epoch,beta,lbda)
-    
     #paramètres few-shot
     Nc = 3 #nombre de classes par épisode
     Ns = 2 #nombre d'exemples dans le support par classe
@@ -64,19 +68,40 @@ if __name__ == "__main__":
     nb_episodes = 2
     flag = 0 #0 pour conv4, 1 pour resnet12
     K = len(torch.unique(Y_train))
+    """
+    
+    """
+    #partie MiniImageNet
+    #model
+    model = ConstellationNet(k,nb_head,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one,nb_epoch,beta,lbda)
+    
+    
     
     print("K : ",K)
     
     #boucle apprentissage
     apprentissage(model,X,Y,Nc,Ns,Nq,nb_episodes,flag)
-
     """
-	Pour le jeu de données CIFAR-FS 
-    """    
 
-    """
+    
+	#Pour le jeu de données CIFAR-FS 
+    
     train_data, train_label, test_data, test_label, val_data, val_label = get_CIFARFS()
-    all_acc = training(train_data[500:800], train_label[500:800], test_data[500:800], test_label[500:800], 10)
+    
+    k = 32
+    nb_head = 8
+    n_channels_start = train_data.shape[1]
+    n_channels_convo = 3
+    n_channels_concat = n_channels_convo + k
+    n_channels_one_one = 3
+    nb_epoch = 2
+    beta = 0.01
+    lbda = 1.0
+    flag = 0
+    
+    model = ConstellationNet(k,nb_head,n_channels_start,n_channels_convo,n_channels_concat,n_channels_one_one,nb_epoch,beta,lbda)
+    #paramètres few-shot
+    all_acc = training(train_data[500:800], train_label[500:800], test_data[500:800], test_label[500:800], 10,model,flag)
 
-    """
+    
     

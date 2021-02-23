@@ -1,82 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 13 20:04:00 2021
 
-@author: Emmanuel
-"""
 
 import scipy
 import torchvision
 import pickle
 import torch 
 from torch import utils
-import torchmeta
+#import torchmeta
 
 
 datasets_path = "..\\datasets"
 
 
 
-
-
-"""
-train_file = "..\\datasets\\cifar-100-python\\train"
-train_data = unpickle(train_file)
-
-test_file = "..\\datasets\\cifar-100-python\\test"
-test_data = unpickle(test_file)
-
-
-print("train_data len : ",len(train_data))
-print("nombre de classes : ",len(set(train_data[b'fine_labels'])))
-
-
-print("test_data len : ",len(test_data))
-print("nombre de classes : ",len(set(test_data[b'fine_labels'])))
-
-
-#récupération des données de train
-
-#X_train = torch.from_numpy(train_data[b'data']).reshape(50000,32,32,32)
-#Y_train = torch.tensor(train_data[b'fine_labels'])
-
-
-#print("shape de X_train : ",X_train.shape)
-#print("shape de Y_train : ",Y_train.shape)
-"""
-
-
-
-
-#cifar100 (pas utilisé)
-"""
-c100_dataset_train = torchvision.datasets.CIFAR100("..\\datasets",download = True)
-X_train_fc = torch.from_numpy(c100_dataset_train.data)
-Y_train_fc = torch.tensor(c100_dataset_train.targets)
-print("X_train shape  :",X_train_fc.shape)
-print("Y_train shape : ",Y_train_fc.shape)
-print("Nombre de classes :",len(torch.bincount(Y_train_fc)))
-"""
-
-
-
-"""
-
-
-#fc100_train = torchmeta.datasets.FC100(datasets_path,meta_train = True,download = True)
-
-
-mini_imagenet_train = torchmeta.datasets.MiniImagenet(datasets_path,64,meta_train = True,download = True)
-train_dataset = mini_imagenet_train.dataset
-
-mini_imagenet_val = torchmeta.datasets.MiniImagenet(datasets_path,16,meta_val = True,download = True)
-val_dataset = mini_imagenet_val.dataset
-
-mini_imagenet_test = torchmeta.datasets.MiniImagenet(datasets_path,20,meta_test= True,download = True)
-test_dataset = mini_imagenet_test.dataset
-"""
-
-#print("train_dataset len : ",train_dataset.__len__())
 
 
 

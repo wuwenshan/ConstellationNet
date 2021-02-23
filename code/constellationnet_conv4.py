@@ -9,7 +9,7 @@ import numpy as np
 class ConstellationNet_conv4(torch.nn.Module):
     
     def __init__(self, nb_clusters, nb_heads, nb_epochs, beta, lbda, n_channels_start, n_channels_convo, output_size):
-        super(ConstellationNet, self).__init__()
+        super(self).__init__()
         
         self.nb_cluster = nb_clusters
         self.nb_head = nb_heads
